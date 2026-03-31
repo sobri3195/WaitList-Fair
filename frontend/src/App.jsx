@@ -40,6 +40,7 @@ export default function App() {
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [activeTab, setActiveTab] = useState('input')
 
   const highRiskWaitingImpact = useMemo(() => {
     if (!result?.prioritized) return 0
@@ -63,6 +64,7 @@ export default function App() {
         throw new Error('Gagal memproses prioritisasi.')
       }
       setResult(await resp.json())
+      setActiveTab('result')
     } catch (err) {
       setError(err.message)
       setResult(null)
@@ -70,6 +72,11 @@ export default function App() {
       setLoading(false)
     }
   }
+
+  const navItems = [
+    { key: 'input', label: 'Input Pasien', disabled: false },
+    { key: 'result', label: 'Hasil', disabled: !result }
+  ]
 
   return (
     <main className="container">
@@ -79,7 +86,7 @@ export default function App() {
         dengan pertimbangan fairness antarkelompok pasien.
       </p>
 
-      <section className="card">
+      <section className={`card section-input ${activeTab === 'input' ? 'is-active' : ''}`}>
         <h2>Input Pasien (JSON)</h2>
         <textarea
           value={patientsJson}
@@ -93,7 +100,7 @@ export default function App() {
       </section>
 
       {result && (
-        <section className="card">
+        <section className={`card section-result ${activeTab === 'result' ? 'is-active' : ''}`}>
           <h2>Hasil Prioritisasi</h2>
           <p><strong>Baseline Manual:</strong> {result.manual_baseline}</p>
           <p><strong>Jumlah High-Risk:</strong> {result.metrics.high_risk_count}</p>
@@ -108,32 +115,48 @@ export default function App() {
           </ul>
 
           <h3>Urutan Prioritas</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Kelompok</th>
-                <th>Risk</th>
-                <th>Fairness Boost</th>
-                <th>Priority</th>
-                <th>Kategori</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.prioritized.map((p) => (
-                <tr key={p.patient_id}>
-                  <td>{p.patient_id}</td>
-                  <td>{p.group}</td>
-                  <td>{p.risk_score}</td>
-                  <td>{p.fairness_boost}</td>
-                  <td>{p.priority_score}</td>
-                  <td>{p.suggested_priority}</td>
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Kelompok</th>
+                  <th>Risk</th>
+                  <th>Fairness Boost</th>
+                  <th>Priority</th>
+                  <th>Kategori</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {result.prioritized.map((p) => (
+                  <tr key={p.patient_id}>
+                    <td>{p.patient_id}</td>
+                    <td>{p.group}</td>
+                    <td>{p.risk_score}</td>
+                    <td>{p.fairness_boost}</td>
+                    <td>{p.priority_score}</td>
+                    <td>{p.suggested_priority}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
+
+      <nav className="bottom-nav" aria-label="Navigasi mobile">
+        {navItems.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className={`nav-item ${activeTab === item.key ? 'active' : ''}`}
+            onClick={() => setActiveTab(item.key)}
+            disabled={item.disabled}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
     </main>
   )
 }
